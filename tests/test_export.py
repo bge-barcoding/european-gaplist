@@ -48,8 +48,28 @@ def test_seed_and_full_table(workspace):
     full = pd.read_csv(workspace / "output" / "gaplist_full.tsv", sep="\t")
     assert bool(full.set_index("species").loc["Aagaardia sivertseni", "possibly_alien"])
     summary = (workspace / "output" / "summary.md").read_text()
-    assert "European species: 3" in summary and "Gaps (no compliant barcode): 2" in summary
+    assert "**3 animal species** count as occurring in Europe" in summary
+    assert "**2 (66.7%) are gaps**" in summary
+    assert "at least one of three independent sources says" in summary
+    assert "Netherlands" in summary and "Åland" in summary  # country names, not codes
+    assert "| only GBIF | 1 | 33.3% |" in summary  # species 9
+    assert "| family | 1 |" in summary  # Orphanus solus has no family
     assert "1 species have no family" in result.message
+    assert "Incomplete run" in summary  # no BOLD snapshot in this fixture
+
+
+def test_summary_explains_xr_only_and_own(workspace):
+    con = db.connect(workspace / "g.duckdb")
+    con.execute("UPDATE taxon SET xr_added = true WHERE taxon_id = '9'")
+    con.execute("UPDATE run SET col_release_type = 'xr', bold_snapshot = '2026-10-30'")
+    con.execute("UPDATE barcode_status SET own = 0, other = 2")
+    con.close()
+    assert export.export(load_settings(), workspace / "g.duckdb").ok
+    summary = (workspace / "output" / "summary.md").read_text()
+    assert "1 species on the list (33.3%) have a name that only the eXtended Release has" in summary
+    assert "The most doubtful are the 1 that GBIF alone supports." in summary
+    assert "Check needed:" in summary  # BGE projects listed, but no own barcodes counted
+    assert "Incomplete run" not in summary  # GBIF and BOLD were both used here
 
 
 def test_min_sources_and_priority_groups(workspace):

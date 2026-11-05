@@ -14,12 +14,11 @@ specimens from Europe. Each listed species gets one row:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
-from . import db, paths
+from . import db, paths, summary
 from .config import Settings, SettingsError, load_settings
 from .progress import say
 
@@ -123,47 +122,6 @@ def check_seed(seed: pd.DataFrame) -> tuple[list[str], list[str]]:
     return problems, notes
 
 
-def summary_markdown(con, table: pd.DataFrame, by_class: pd.DataFrame, notes: list[str]) -> str:
-    run = con.execute(
-        "SELECT run_id, col_release_type, col_version, col_doi, legacy_commit, gbif_download_doi, bold_snapshot "
-        "FROM run ORDER BY run_id DESC LIMIT 1"
-    ).fetchone()
-    run_id, release_type, col_version, col_doi, legacy, gbif_doi, bold_snapshot = run
-    gaps = int((table.compliant == 0).sum())
-    lines = [
-        f"# European gap list, run {run_id} ({date.today().isoformat()})",
-        "",
-        "## Sources",
-        "",
-        f"- Catalogue of Life {release_type} release {col_version}" + (f", https://doi.org/{col_doi}" if col_doi else ""),
-        f"- Earlier European checklist: gaplist-data at commit {legacy or 'not used'}",
-        "- GBIF occurrence download: " + (f"https://doi.org/{gbif_doi}" if gbif_doi else "not used"),
-        f"- BOLD public data package: {bold_snapshot or 'not used'}",
-        "",
-        "## Totals",
-        "",
-        f"- European species: {len(table):,}",
-        f"- With at least one barcode-compliant sequence: {len(table) - gaps:,} ({(len(table) - gaps) / max(len(table), 1):.1%})",
-        f"- Gaps (no compliant barcode): {gaps:,}",
-        f"- Species only in the Catalogue of Life eXtended Release: {int(table.xr_only.sum()):,}",
-        f"- Possibly alien (GBIF records marked as introduced): {int(table.possibly_alien.sum()):,}",
-        "",
-        "## Notes",
-        "",
-        *([f"- {n}" for n in notes] or ["- None."]),
-        "",
-        "## Per class",
-        "",
-        "| Phylum | Class | Species | Barcoded | Gaps | Barcoded (%) |",
-        "| --- | --- | ---: | ---: | ---: | ---: |",
-        *[
-            f"| {r.phylum} | {r['class']} | {r.species:,} | {r.barcoded:,} | {r.gaps:,} | {r.percent:.1f} |"
-            for _, r in by_class.iterrows()
-        ],
-    ]
-    return "\n".join(lines) + "\n"
-
-
 def export(settings: Settings | None = None, database: Path | None = None) -> ExportResult:
     """Run Phase 4 and describe the outcome in plain words."""
     try:
@@ -179,6 +137,7 @@ def export(settings: Settings | None = None, database: Path | None = None) -> Ex
         table = build_table(con, settings)
         seed = seed_rows(table, settings)
         problems, notes = check_seed(seed)
+        rank_notes = list(notes)
         if problems:
             return ExportResult(False, "The target list was not written, because:\n- " + "\n- ".join(problems))
         missing = [
@@ -201,7 +160,7 @@ def export(settings: Settings | None = None, database: Path | None = None) -> Ex
         out.mkdir(exist_ok=True)
         seed.to_csv(out / "targetlist_seed.tsv", sep="\t", index=False)
         table.to_csv(out / "gaplist_full.tsv", sep="\t", index=False)
-        (out / "summary.md").write_text(summary_markdown(con, table, by_class, notes), encoding="utf-8")
+        (out / "summary.md").write_text(summary.build(con, table, by_class, rank_notes, settings), encoding="utf-8")
     finally:
         con.close()
 
