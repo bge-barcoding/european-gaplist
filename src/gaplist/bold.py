@@ -131,22 +131,26 @@ def load_records(con: duckdb.DuckDBPyConnection, path: Path, settings: Settings)
     return con.execute("SELECT count(*) FROM bold_raw").fetchone()[0]
 
 
-def resolve_names(con: duckdb.DuckDBPyConnection, settings: Settings) -> pd.DataFrame:
-    """Match the distinct species names used in BOLD to the backbone."""
+def resolve_names(con: duckdb.DuckDBPyConnection, settings: Settings) -> tuple[pd.DataFrame, dict, dict]:
+    """Match the distinct species names used in BOLD to the backbone.
+
+    Returns the results, the classification BOLD gives per name, and the
+    number of specimens per name.
+    """
     names = con.execute(
         f"""
         SELECT species, first(family) AS family, first("order") AS "order", first(class) AS class,
-               first(phylum) AS phylum
+               first(phylum) AS phylum, count(DISTINCT processid) AS specimens
         FROM bold_raw
         WHERE species IS NOT NULL AND identification_rank IN {SPECIES_RANKS}
         GROUP BY species
         """
     ).fetchall()
-    queries = [
-        resolve.Query(SOURCE, name, {"family": fam, "order": order, "class": cls, "phylum": phy})
-        for name, fam, order, cls, phy in names
-    ]
-    return resolve.resolve(con, queries, settings.curation)
+    hints = {name: {"family": fam, "order": order, "class": cls, "phylum": phy}
+             for name, fam, order, cls, phy, _ in names}
+    specimens = {name: n for name, *_, n in names}
+    queries = [resolve.Query(SOURCE, name, hints[name]) for name in hints]
+    return resolve.resolve(con, queries, settings.curation), hints, specimens
 
 
 def store(con: duckdb.DuckDBPyConnection, settings: Settings, resolution: pd.DataFrame) -> None:
@@ -230,7 +234,7 @@ def import_bold(settings: Settings | None = None, database: Path | None = None) 
             records = load_records(con, path, settings)
         except (BoldError, duckdb.Error) as err:
             return BoldResult(False, f"The BOLD file could not be read: {err}")
-        resolution = resolve_names(con, settings)
+        resolution, hints, specimens_per_name = resolve_names(con, settings)
         con.execute("BEGIN TRANSACTION")
         try:
             if not resolution.empty:
@@ -241,6 +245,11 @@ def import_bold(settings: Settings | None = None, database: Path | None = None) 
         except Exception:
             con.execute("ROLLBACK")
             raise
+        review_file = database.parent / "review" / "bold_names.xlsx"
+        to_review = (
+            resolve.write_review(con, resolution, hints, review_file, "BOLD", specimens_per_name, "specimens")
+            if not resolution.empty else 0
+        )
         stats = con.execute(
             """
             SELECT
@@ -262,7 +271,8 @@ def import_bold(settings: Settings | None = None, database: Path | None = None) 
     lines = [
         f"BOLD snapshot of {date}: {records:,} {'/'.join(settings.bold['markers'])} records of "
         f"{', '.join(settings.col['kingdoms'])} ({specimens:,} specimens).",
-        f"{names:,} species names used in BOLD; {names_ok:,} matched to Catalogue of Life. "
+        f"{names:,} species names used in BOLD; {names_ok:,} matched to Catalogue of Life; "
+        f"{to_review:,} need a person (see data/review/bold_names.xlsx, the names with most specimens first). "
         f"{placed:,} specimens are placed on a backbone species; the rest are identified only above "
         "species level, or under a name that did not match.",
         f"{compliant:,} sequences are barcode-compliant (at least {settings.bold['min_length']} bases).",

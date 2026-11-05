@@ -27,6 +27,7 @@ as resolved. Subspecies and varieties are counted with their species.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import duckdb
 import pandas as pd
@@ -260,3 +261,58 @@ def store(con: duckdb.DuckDBPyConnection, results: pd.DataFrame) -> None:
         """
     )
     con.unregister("resolution_df")
+
+
+def write_review(
+    con: duckdb.DuckDBPyConnection,
+    results: pd.DataFrame,
+    hints: dict[str, dict],
+    target: Path,
+    source_label: str,
+    weights: dict[str, int] | None = None,
+    weight_label: str = "",
+) -> int:
+    """A spreadsheet of names needing a person, laid out to copy into curation.tsv.
+
+    ``weights`` (e.g. specimens per name) puts the names that matter most first.
+    """
+    todo = results[results.outcome.isin(["review", "unmatched"])].copy()
+    names = dict(con.execute("SELECT taxon_id, name FROM taxon WHERE rank = 'species'").fetchall())
+    todo["suggestion"] = todo.candidates.map(lambda c: names.get(c[0], "") if len(c) else "")
+    todo["other_candidates"] = todo.candidates.map(lambda c: "; ".join(names.get(x, x) for x in c[1:]))
+    for rank in ("family", "order"):
+        todo[f"{rank}_in_source"] = todo.original_name.map(lambda n, r=rank: (hints.get(n) or {}).get(r) or "")
+    for column in ("decision", "target_name", "curator", "date"):
+        todo[column] = ""
+    columns = ["source", "original_name", "decision", "target_name", "curator", "date", "outcome",
+               "suggestion", "other_candidates", "family_in_source", "order_in_source", "note"]
+    order = ["outcome", "order_in_source", "family_in_source", "original_name"]
+    if weights is not None:
+        todo[weight_label] = todo.original_name.map(lambda n: weights.get(n, 0))
+        columns.insert(7, weight_label)
+        order = [weight_label, "original_name"]
+    todo = todo.sort_values(order, ascending=[weights is None] * (len(order) - 1) + [True])[columns]
+    explanation = pd.DataFrame(
+        {
+            "How to use this list": [
+                f"Each row is a name from {source_label} that could not be matched automatically.",
+                "outcome 'review': there is a likely match (see 'suggestion') or several possible ones.",
+                "outcome 'unmatched': no Catalogue of Life name was found, not even a similar one.",
+                *(
+                    [f"The column '{weight_label}' shows how much depends on each name; the list starts with "
+                     "the names that matter most."]
+                    if weights is not None else []
+                ),
+                "To decide, fill in 'decision': accept (take the suggestion), map (use the name you",
+                "type in 'target_name') or reject (leave the name out). Add your initials and the date.",
+                "Then copy the first six columns of the rows you decided into config/curation.tsv",
+                "and run the notebook section again. Your decisions are kept for all later runs.",
+                "See docs/reviewing-names.md for worked examples.",
+            ]
+        }
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(target, engine="openpyxl") as writer:
+        explanation.to_excel(writer, sheet_name="Read me", index=False)
+        todo.to_excel(writer, sheet_name="Names to review", index=False)
+    return len(todo)

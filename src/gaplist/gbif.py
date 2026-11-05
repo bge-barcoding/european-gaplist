@@ -196,7 +196,9 @@ def read_species_list(path: Path) -> pd.DataFrame:
     return grouped
 
 
-def map_to_backbone(con, species: pd.DataFrame, curation: list[dict]) -> tuple[dict[str, str], pd.DataFrame, int]:
+def map_to_backbone(
+    con, species: pd.DataFrame, curation: list[dict], review_file: Path | None = None
+) -> tuple[dict[str, str], pd.DataFrame, int]:
     """Map GBIF species keys to backbone species: by key, else by name.
 
     Returns the mapping, the name matching results and how many joined by key.
@@ -225,6 +227,11 @@ def map_to_backbone(con, species: pd.DataFrame, curation: list[dict]) -> tuple[d
         for row in rest_rows:
             if row["species"] in by_name:
                 mapping[row["speciesKey"]] = by_name[row["species"]]
+        if review_file is not None:
+            resolve.write_review(
+                con, results, {r["species"]: r for r in rest_rows}, review_file, "GBIF",
+                {r["species"]: r["records"] for r in rest_rows}, "records",
+            )
     return mapping, results, len(joined)
 
 
@@ -318,7 +325,9 @@ def import_gbif(
 
         main = read_species_list(files["main"])
         alien_keys = set(read_species_list(files["alien"]).speciesKey)
-        mapping, resolution, by_key = map_to_backbone(con, main, settings.curation)
+        mapping, resolution, by_key = map_to_backbone(
+            con, main, settings.curation, database.parent / "review" / "gbif_names.xlsx"
+        )
 
         con.execute("BEGIN TRANSACTION")
         try:
@@ -345,7 +354,7 @@ def import_gbif(
     lines = [
         f"{len(main):,} animal species with qualifying GBIF records in the configured European countries.",
         f"{by_key:,} matched to the backbone by key, {by_name:,} by name; {unplaced:,} could not be placed"
-        + (" (see the name matching results for source 'gbif')." if unplaced else "."),
+        + (" (see data/review/gbif_names.xlsx)." if unplaced else "."),
         f"{len(evidence):,} backbone species now have GBIF evidence; {alien:,} of them flagged as possibly alien.",
         f"Please cite the GBIF download: https://doi.org/{doi}" if doi else "GBIF download has no DOI yet.",
     ]

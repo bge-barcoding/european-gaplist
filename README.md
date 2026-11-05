@@ -32,8 +32,16 @@ Open `notebooks/gaplist.ipynb` on the shared Jupyter hub and run it from
 top to bottom. The notebook explains each step as you go.
 
 To change what the pipeline does (for example, which countries count as
-Europe), edit the files in the `config` folder. `config/README.md` explains
-each one.
+Europe), edit the files in the `config` folder.
+
+**Documentation** for people running the pipeline is in [docs](docs/README.md):
+[getting started](docs/getting-started.md),
+[how it works](docs/how-it-works.md),
+[changing the settings](docs/settings.md),
+[reviewing names](docs/reviewing-names.md),
+[reading the results](docs/results.md) and
+[when something goes wrong](docs/troubleshooting.md).
+Developers: see the [developer guide](docs/developer-guide.md).
 
 ## Status
 
@@ -41,8 +49,8 @@ Work in progress, following the roadmap. Currently in place: the settings
 files, their checks and the database layout (Phase 0), the Catalogue of
 Life backbone (Phase 1), name matching with the earlier European checklist
 and GBIF occurrence evidence (Phase 2), barcode counts from BOLD (Phase 3),
-and the export to the target list website (Phase 4). Still to come: the
-documentation for non-technical users (Phase 5).
+the export to the target list website (Phase 4), and documentation for
+non-technical users (Phase 5).
 
 ## For developers
 
