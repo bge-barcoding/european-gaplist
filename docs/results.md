@@ -4,16 +4,21 @@ Section 4 writes three files to `data/output/`.
 
 ## `summary.md`: start here
 
-A short report of the run:
+A report of the run, written to be read on its own by anyone, including
+people who have never seen the pipeline. Share it as it is. It explains:
 
-- **Sources**: the exact data versions used, with DOIs. Cite the Catalogue
-  of Life and GBIF DOIs whenever the gap list is published or shared.
-- **Totals**: the number of European species, how many have a barcode, how
-  many are gaps, how many come only from the CoL eXtended Release, and how
-  many are possibly alien.
-- **Notes**: anything to be aware of, such as species for which CoL gives no
-  family.
-- **Per class**: species, barcoded species and gaps for every class.
+- **In short**: how many species count as European, how many have a barcode,
+  how many are gaps, and how many are barcoded from European specimens.
+- **How a species gets on the list**: the three sources, the countries that
+  count as Europe, and how many species each combination of sources supports.
+- **Barcodes: own and other**: BGE's own barcodes versus everyone else's.
+- **Things to keep in mind**: names still waiting for a person, species whose
+  names only the Catalogue of Life eXtended Release has, possibly alien
+  species, and gaps in the classification.
+- **Coverage per group**: species, barcoded species and gaps for every class,
+  with common names.
+- **Data used in this run**: the exact versions, with the DOIs to cite.
+- **Glossary**: the few technical words used.
 
 ## `targetlist_seed.tsv`: for the website
 
