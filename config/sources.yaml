@@ -63,17 +63,17 @@ gbif:
     - MATERIAL_SAMPLE
     - OCCURRENCE
   # Records from captivity, cultivation or deliberate release do not count
-  # (GBIF field "degree of establishment").
+  # (GBIF field "degree of establishment"). Values as in GBIF's vocabulary.
   exclude_degree_of_establishment:
-    - MANAGED
-    - CAPTIVE
-    - CULTIVATED
-    - RELEASED
+    - managed
+    - captive
+    - cultivated
+    - released
   # Species with records marked as introduced are still included, but
   # flagged as possibly alien (GBIF field "establishment means").
   flag_establishment_means:
-    - INTRODUCED
-    - INTRODUCED_ASSISTED_COLONISATION
+    - introduced
+    - introducedAssistedColonisation
 
 # --- Combining the evidence -----------------------------------------------
 evidence:
