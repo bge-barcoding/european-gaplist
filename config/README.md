@@ -1,6 +1,6 @@
 # Settings
 
-These four files hold every choice the pipeline makes. You can change them
+These five files hold every choice the pipeline makes. You can change them
 with any text editor, or directly on GitHub. You never need to change code.
 
 | File | What it decides |
@@ -8,6 +8,7 @@ with any text editor, or directly on GitHub. You never need to change code.
 | `europe.yaml` | Which countries count as Europe. |
 | `sources.yaml` | Which versions of Catalogue of Life, BOLD and GBIF to use, and how to filter them. |
 | `own_barcodes.yaml` | Which BOLD projects and institutions count as "own" barcodes. |
+| `target_list.yaml` | How the target list for the website is filled in ("Wanted", "Collected", species only in the eXtended Release). |
 | `curation.tsv` | Your decisions about names the pipeline could not match on its own. |
 
 Each `.yaml` file explains itself in the lines starting with `#`.

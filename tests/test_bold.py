@@ -101,7 +101,9 @@ def test_parquet(workspace, tmp_path):
 
 def test_no_own_lists(workspace):
     (workspace / "bold" / "manual" / "BOLD_Public.22-May-2026.tsv").write_text(TSV)
-    result = bold.import_bold(load_settings(), workspace / "g.duckdb")
+    settings = load_settings()
+    settings.own_projects, settings.own_institutions = [], []
+    result = bold.import_bold(settings, workspace / "g.duckdb")
     assert result.ok, result.message
     con = duckdb.connect(str(workspace / "g.duckdb"))
     assert con.execute("SELECT sum(own) FROM barcode_status").fetchone()[0] == 0

@@ -1,0 +1,22 @@
+# How the target list for the website is filled in.
+
+# "Wanted" tells the website how much a species is wanted for barcoding:
+# 0 = not wanted, 1 = wanted, 2 = very wanted.
+wanted:
+  # The value every species gets...
+  default: 1
+  # ...unless it belongs to one of these groups, in which case it gets
+  # the value under "priority". Each group is a rank and a name, e.g.
+  #   - order: Coleoptera
+  #   - family: Apidae
+  priority: 2
+  priority_groups: []
+
+# "Collected": how many specimens have been collected for barcoding. There
+# is no public source for this, so it is 0 for every species for now.
+collected: 0
+
+# Include species that only the Catalogue of Life eXtended Release has
+# (not its expert-curated base release)? They are always marked in the
+# full results table, whatever this setting.
+include_xr_only: true
