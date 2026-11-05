@@ -2,7 +2,7 @@
 
 Which European animal species already have a public DNA barcode, and which
 are still missing? This repository answers that question and produces the
-data behind the iBOL Europe / BGE target list.
+data behind the [iBOL Europe / BGE target list](https://species.iboleurope.org/).
 
 It replaces an earlier workflow spread over three repositories
 ([gaplist-data](https://github.com/bge-barcoding/gaplist-data),
