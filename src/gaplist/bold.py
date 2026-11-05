@@ -27,6 +27,7 @@ import pandas as pd
 
 from . import db, paths, resolve
 from .config import Settings, SettingsError, load_settings
+from .progress import say
 
 SOURCE = "bold"
 DATA_SUFFIXES = (".tsv", ".tsv.gz", ".parquet")
@@ -86,6 +87,7 @@ def find_snapshot(snapshot_setting: str) -> tuple[Path, str]:
     unpacked = source.parent.parent / "unpacked" / source.name
     existing = [p for p in unpacked.rglob("*") if p.is_file() and _is_data(p.name)] if unpacked.exists() else []
     if not existing:
+        say(f"Unpacking {source.name} (only the first time)...")
         unpacked.mkdir(parents=True, exist_ok=True)
         if zipfile.is_zipfile(source):
             with zipfile.ZipFile(source) as archive:
@@ -230,11 +232,13 @@ def import_bold(settings: Settings | None = None, database: Path | None = None) 
     try:
         if not con.execute("SELECT count(*) FROM taxon").fetchone()[0]:
             return BoldResult(False, "There is no backbone yet. Run section 1 first.")
+        say(f"Reading the BOLD snapshot {path.name} (several minutes for a full snapshot)...")
         try:
             records = load_records(con, path, settings)
         except (BoldError, duckdb.Error) as err:
             return BoldResult(False, f"The BOLD file could not be read: {err}")
         resolution, hints, specimens_per_name = resolve_names(con, settings)
+        say("Saving specimens and counting barcodes per species...")
         con.execute("BEGIN TRANSACTION")
         try:
             if not resolution.empty:

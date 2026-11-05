@@ -34,6 +34,7 @@ from dotenv import load_dotenv
 
 from . import db, paths, resolve
 from .config import Settings, SettingsError, load_settings
+from .progress import say
 
 API = "https://api.gbif.org/v1"
 SOURCE = "gbif"
@@ -291,8 +292,10 @@ def import_gbif(
         deadline = time.monotonic() + wait_minutes * 60
         for kind, alien_only in (("main", False), ("alien", True)):
             request = build_request(settings, kingdom_keys, alien_only, user, email)
+            say(f"Checking the GBIF {'list of introduced records' if alien_only else 'species list'}...")
             try:
                 key, status = obtain(client, request)
+                say(f"  download {key}: {str(status.get('status', 'unknown')).lower()}")
                 while status.get("status") not in FAILED | {DONE} and time.monotonic() < deadline:
                     time.sleep(30)
                     status = client.status(key)
@@ -320,9 +323,11 @@ def import_gbif(
         for kind, (key, status) in downloads.items():
             target = paths.data_dir() / "gbif" / f"{key}.zip"
             if not target.exists():
+                say(f"Downloading GBIF list {key}...")
                 client.download(status["downloadLink"], target)
             files[kind] = target
 
+        say("Reading the GBIF species lists...")
         main = read_species_list(files["main"])
         alien_keys = set(read_species_list(files["alien"]).speciesKey)
         mapping, resolution, by_key = map_to_backbone(
