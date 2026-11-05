@@ -44,8 +44,16 @@ def server(tmp_path_factory):
         port = s.getsockname()[1]
     subprocess.run(["initdb", "-D", str(base / "data"), "-U", "test", "--auth=trust"], check=True,
                    capture_output=True)
-    subprocess.run(["pg_ctl", "-D", str(base / "data"), "-o", f"-p {port} -k {base} -h 127.0.0.1",
-                    "-l", str(base / "log"), "start"], check=True, capture_output=True)
+    # TCP only: no Unix socket. On macOS the temporary folder's path is so long that a
+    # socket in it exceeds the 104-character limit, and Postgres refuses to start.
+    started = subprocess.run(
+        ["pg_ctl", "-D", str(base / "data"), "-w", "-o", f"-p {port} -h 127.0.0.1 -c unix_socket_directories=''",
+         "-l", str(base / "log"), "start"],
+        capture_output=True, text=True,
+    )
+    if started.returncode:
+        log = (base / "log").read_text() if (base / "log").exists() else ""
+        pytest.fail(f"The test Postgres server did not start.\n{started.stdout}{started.stderr}\n{log}")
     for _ in range(50):
         try:
             psycopg.connect(host="127.0.0.1", port=port, user="test", dbname="postgres").close()
