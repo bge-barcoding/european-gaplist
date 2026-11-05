@@ -1,0 +1,65 @@
+# Which versions of the source data to use, and how to filter them.
+#
+# Every run records the exact versions it used, so results can always be
+# traced back. To update the gap list with newer data, change the version
+# here and run the notebook again.
+
+# --- Catalogue of Life: the backbone classification -----------------------
+col:
+  # "base" is the expert-curated release. "xr" is the eXtended Release,
+  # which has more names but is assembled automatically. See the roadmap
+  # for why we start with "base".
+  release_type: base
+  # The release to use, as listed in ChecklistBank, for example "2026-10-10".
+  # "latest" means: use the newest release and write its date into the run
+  # record. Phase 1 replaces this with a fixed date.
+  version: latest
+  # Only species in these kingdoms are included.
+  kingdoms:
+    - Animalia
+
+# --- BOLD: which species already have barcodes ----------------------------
+bold:
+  # Date of the public BOLD data package (snapshot) to use, as YYYY-MM-DD.
+  # "latest" means: use the newest snapshot. Phase 3 fixes a date.
+  snapshot: latest
+  # Only these markers count as a barcode.
+  markers:
+    - COI-5P
+  # A sequence counts as a barcode only if it has at least this many bases.
+  min_length: 500
+
+# --- GBIF: evidence that a species occurs in Europe -----------------------
+gbif:
+  # The taxonomy GBIF uses to label its records. This key means the
+  # Catalogue of Life eXtended Release; do not change it.
+  checklist_key: 7ddf754f-d193-4cc9-b351-99906754a03b
+  # Only records that meet all of these conditions count as evidence.
+  require_coordinates: true
+  occurrence_status: PRESENT
+  # Kinds of record that count. Fossils and literature records are left out.
+  basis_of_record:
+    - HUMAN_OBSERVATION
+    - OBSERVATION
+    - MACHINE_OBSERVATION
+    - PRESERVED_SPECIMEN
+    - MATERIAL_SAMPLE
+    - OCCURRENCE
+  # Records from captivity, cultivation or deliberate release do not count
+  # (GBIF field "degree of establishment").
+  exclude_degree_of_establishment:
+    - MANAGED
+    - CAPTIVE
+    - CULTIVATED
+    - RELEASED
+  # Species with records marked as introduced are still included, but
+  # flagged as possibly alien (GBIF field "establishment means").
+  flag_establishment_means:
+    - INTRODUCED
+    - INTRODUCED_ASSISTED_COLONISATION
+
+# --- Combining the evidence -----------------------------------------------
+evidence:
+  # How many independent sources must support a species before it is
+  # included. 1 means: any single source is enough.
+  min_sources: 1

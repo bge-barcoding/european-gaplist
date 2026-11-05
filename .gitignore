@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- european-gaplist ---
+# Downloaded inputs and run outputs are never committed
+data/*
+!data/README.md
+*.duckdb
+*.duckdb.wal
+# Local credentials
+.env
+# pixi environments (the lock file IS committed)
+.pixi/

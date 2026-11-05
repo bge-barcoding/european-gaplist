@@ -1,0 +1,25 @@
+[project]
+name = "gaplist"
+version = "0.1.0"
+description = "Rerunnable pipeline for the European barcode gap list: CoL backbone, European occurrence evidence, BOLD barcode status"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "pandas>=2.2",
+    "pyyaml>=6.0",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "openpyxl>=3.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gaplist"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

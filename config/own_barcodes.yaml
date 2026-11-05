@@ -1,0 +1,19 @@
+# Which barcodes count as "our own"?
+#
+# The target list shows "own" and "other" barcodes separately. A barcode is
+# counted as own when its BOLD record belongs to one of the projects or
+# datasets listed below, OR was deposited by one of the listed institutions.
+# All other barcodes count as "other".
+#
+# How to change it:
+#   - Project and dataset codes are the short codes BOLD shows for a
+#     project or dataset, for example "BGENL" or "DS-BGE001".
+#   - Institution names must be written exactly as BOLD spells them in the
+#     "Institution storing" field.
+#   - Leave a list empty ([]) if you do not want to use it.
+#
+# This list is still to be agreed (see the roadmap, open points).
+
+projects: []
+
+institutions: []

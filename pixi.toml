@@ -1,0 +1,42 @@
+# A locked, reproducible environment (see pixi.lock).
+# Users do not need to know about this: the hub administrator installs it
+# once with `pixi install` and registers the kernel with `pixi run kernel`.
+
+[workspace]
+name = "european-gaplist"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+# All dependencies come from conda-forge. Keep this list in step with
+# [project.dependencies] in pyproject.toml (conda-forge calls duckdb
+# "python-duckdb").
+[dependencies]
+python = "3.12.*"
+python-duckdb = ">=1.1"
+pandas = ">=2.2"
+pyyaml = ">=6.0"
+requests = ">=2.32"
+python-dotenv = ">=1.0"
+openpyxl = ">=3.1"
+jupyterlab = ">=4.2"
+ipykernel = ">=6.29"
+
+# The gaplist package is used straight from src/, so edits take effect
+# without reinstalling.
+[activation.env]
+PYTHONPATH = "$PIXI_PROJECT_ROOT/src"
+
+[feature.test.dependencies]
+pytest = ">=8"
+
+[environments]
+default = { solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
+
+[tasks]
+lab = "jupyter lab notebooks/gaplist.ipynb"
+kernel = "python -m ipykernel install --user --name european-gaplist --display-name 'European gaplist' --env PYTHONPATH $PIXI_PROJECT_ROOT/src"
+check = "python -m gaplist.check"
+
+[feature.test.tasks]
+test = "pytest"
