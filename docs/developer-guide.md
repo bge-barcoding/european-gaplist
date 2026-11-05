@@ -5,6 +5,7 @@
 ```
 config/            settings users edit (validated by gaplist.config)
 notebooks/         the front end: one section per step, calling the package
+Start European gaplist.command / .bat   double-click launchers (macOS / Windows)
 src/gaplist/       all logic
   config.py        reads and checks the settings; plain-language errors
   db.py, schema.sql  the DuckDB run database
@@ -33,7 +34,8 @@ failure (missing file, unreachable service, bad setting).
 pixi install            # locked environment from pixi.lock
 pixi run -e test test   # all tests
 pixi run check          # check the settings
-pixi run kernel         # register the Jupyter kernel
+pixi run lab            # open the notebook (what the launchers do)
+pixi run kernel         # only to use the notebook from a Jupyter installed elsewhere
 ```
 
 All dependencies come from conda-forge; the package is used from `src/` via

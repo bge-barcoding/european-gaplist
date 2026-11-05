@@ -1,7 +1,7 @@
 # Settings
 
 These five files hold every choice the pipeline makes. You can change them
-with any text editor, or directly on GitHub. You never need to change code.
+with any plain text editor, or in JupyterLab. You never need to change code.
 
 | File | What it decides |
 | --- | --- |

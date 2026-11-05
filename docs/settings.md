@@ -1,8 +1,8 @@
 # Changing the settings
 
 Every choice the pipeline makes is in the `config` folder. You can change
-these files in Jupyter (double-click to open, *File*, *Save*) or directly on
-GitHub. You never need to change code.
+these files in JupyterLab (double-click to open, *File*, *Save*) or in any
+plain text editor (TextEdit on a Mac, Notepad on Windows). You never need to change code.
 
 After changing a setting, run **section 0** of the notebook. It checks all
 settings at once and lists every mistake, with the file and what to fix.

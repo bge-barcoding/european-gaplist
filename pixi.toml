@@ -1,6 +1,6 @@
-# A locked, reproducible environment (see pixi.lock).
-# Users do not need to know about this: the hub administrator installs it
-# once with `pixi install` and registers the kernel with `pixi run kernel`.
+# A locked, reproducible environment (see pixi.lock). Set up once with
+# `pixi install`; after that, the launcher ("Start European gaplist")
+# runs `pixi run lab`, which opens the notebook in this environment.
 
 [workspace]
 name = "european-gaplist"
@@ -38,6 +38,7 @@ test = { features = ["test"], solve-group = "default" }
 
 [tasks]
 lab = "jupyter lab notebooks/gaplist.ipynb"
+# only needed to use the notebook from a Jupyter installed elsewhere
 kernel = "python -m ipykernel install --user --name european-gaplist --display-name 'European gaplist' --env PYTHONPATH $PIXI_PROJECT_ROOT/src"
 check = "python -m gaplist.check"
 
