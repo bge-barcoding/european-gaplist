@@ -37,8 +37,14 @@ CREATE TABLE IF NOT EXISTS taxon (
     "order"     VARCHAR,
     family      VARCHAR,
     genus       VARCHAR,
-    species     VARCHAR
+    species     VARCHAR,
+    -- for species and infraspecific taxa: the species they belong to,
+    -- so that subspecies are counted with their species
+    species_id  VARCHAR
 );
+
+-- Added in Phase 1; keeps databases made by earlier versions usable.
+ALTER TABLE taxon ADD COLUMN IF NOT EXISTS species_id VARCHAR;
 
 -- CoL synonyms, each pointing to its accepted taxon (Phase 1).
 CREATE TABLE IF NOT EXISTS synonym (

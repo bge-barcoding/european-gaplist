@@ -17,6 +17,11 @@ col:
   # Only species in these kingdoms are included.
   kingdoms:
     - Animalia
+  # Leave out taxa that Catalogue of Life marks as extinct (fossils).
+  exclude_extinct: true
+  # If ChecklistBank cannot be reached, download the ColDP zip file by
+  # hand and put it in the folder data/col/manual/. The pipeline then uses
+  # that file and reads its version from the file itself.
 
 # --- BOLD: which species already have barcodes ----------------------------
 bold:

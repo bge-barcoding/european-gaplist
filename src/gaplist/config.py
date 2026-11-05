@@ -134,6 +134,8 @@ def _check_sources(data: dict[str, Any], problems: list[str]) -> tuple[dict, dic
         problems.append("sources.yaml: col 'version' must be 'latest' or a date written as YYYY-MM-DD.")
     if not col.get("kingdoms"):
         problems.append("sources.yaml: col 'kingdoms' must list at least one kingdom, for example Animalia.")
+    if not isinstance(col.get("exclude_extinct"), bool):
+        problems.append("sources.yaml: col 'exclude_extinct' must be true or false.")
 
     if not DATE_OR_LATEST.match(str(bold.get("snapshot", ""))):
         problems.append("sources.yaml: bold 'snapshot' must be 'latest' or a date written as YYYY-MM-DD.")

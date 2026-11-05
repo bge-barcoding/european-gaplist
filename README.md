@@ -38,7 +38,8 @@ each one.
 ## Status
 
 Work in progress, following the roadmap. Currently in place: the settings
-files, their checks, and the database layout (Phase 0).
+files, their checks and the database layout (Phase 0), and the Catalogue of
+Life backbone (Phase 1).
 
 ## For developers
 
