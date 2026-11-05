@@ -28,8 +28,11 @@ The new version can be rerun at any time by someone who does not program.
 
 ## Running it
 
-Open `notebooks/gaplist.ipynb` on the shared Jupyter hub and run it from
-top to bottom. The notebook explains each step as you go.
+The pipeline runs on an ordinary laptop (16 GB of memory, 25 GB of free
+disk). After a one-time setup, double-click `Start European gaplist.command`
+(Mac) or `Start European gaplist.bat` (Windows); the notebook opens in your
+browser. Run it from top to bottom; it explains each step as you go. See
+[getting started](docs/getting-started.md) for the setup.
 
 To change what the pipeline does (for example, which countries count as
 Europe), edit the files in the `config` folder.
@@ -58,7 +61,7 @@ The environment is managed with [pixi](https://pixi.sh):
 
 ```bash
 pixi install            # create the locked environment
-pixi run kernel         # register the "European gaplist" Jupyter kernel
+pixi run lab            # open the notebook (what the launchers do)
 pixi run check          # check the settings from the command line
 pixi run -e test test   # run the tests
 ```

@@ -30,7 +30,7 @@ These were agreed on 4 November 2026 and set the scope of the first release. Eac
 | Evidence rule | One line of evidence is enough to include a species. Every source is kept per species, so the rule can be tightened later. |
 | GBIF filters | At least one record with coordinates, not flagged as captive or cultivated, with a sound basis of record. Alien species are included and flagged. |
 | Europe | A configuration file of ISO country codes (see Phase 0). |
-| Run environment | One step-by-step notebook on a shared hub. GBIF credentials sit in a local file that is never committed. |
+| Run environment | One step-by-step notebook on a laptop (changed from a shared hub on 5 November 2026), opened with a double-click launcher. GBIF credentials sit in a local file that is never committed. |
 | Web app | The seed TSV schema stays as it is for the first release. App changes are proposed separately. |
 | Code | A new repository in the bge-barcoding organisation, reusing the relational model and loader code where it fits. |
 
@@ -57,7 +57,7 @@ Phase 0 sets up the repository, the configuration files and the run environment,
 - `own_barcodes.yaml`: the BOLD project codes and institutions that count as "own".
 - `curation.tsv`: manual decisions on names (see Phase 2), kept between runs.
 
-**Environment.** A locked environment (pixi or conda-lock) so the notebook behaves the same everywhere, published as a kernel on a shared JupyterHub. GBIF credentials go in a local `.env` file excluded from Git.
+**Environment.** A locked environment (pixi or conda-lock) so the notebook behaves the same everywhere, run on a laptop and opened with a double-click launcher (originally planned as a kernel on a shared JupyterHub; changed on 5 November 2026). GBIF credentials go in a local `.env` file excluded from Git.
 
 **The Europe configuration** is a list of ISO 3166-1 country codes, as GBIF and BOLD (`country_iso`) both use them. Proposed starting point:
 
@@ -235,13 +235,13 @@ Phase 5 makes the whole pipeline runnable by someone who does not program: one n
 - one cell to run;
 - a plain summary of the result ("1,234 names need review; see `review/names.xlsx`") and a green, amber or red status line.
 
-Steps that take long or wait on others (the GBIF download, the BOLD snapshot) save their progress. If the notebook is closed or the hub restarts, running it again resumes where it stopped instead of starting over.
+Steps that take long or wait on others (the GBIF download, the BOLD snapshot) save their progress. If the notebook or the laptop is closed, running it again resumes where it stopped instead of starting over.
 
 **Review loop.** When names need review, the notebook stops at that point and says so. The curator opens the review spreadsheet, records decisions in `curation.tsv`, and reruns from that section. A run can also be completed with unresolved names left out; they are then listed in the summary.
 
 **Documentation.** Written for a biologist, not a developer, and published with the repository:
 
-- *Getting started*: logging in to the hub, opening the notebook, running it for the first time.
+- *Getting started*: the one-time laptop setup, opening the notebook, running it for the first time.
 - *What the pipeline does*: the five stages, with the diagram from this roadmap.
 - *Changing the settings*: editing the Europe list, the "own" projects and the source versions, with examples.
 - *Reviewing names*: how to read a review list and record a decision, with worked examples of a synonym, a homonym and a misspelling.
@@ -269,7 +269,7 @@ The main risk is that the CoL base release lacks species that our evidence suppo
 | Base release gaps | European species with good evidence have no base release name, especially in poorly covered insect groups | Phase 2 reports how many names match only the XR. If the share is material, switch to the XR, which is one setting. |
 | Identifier mapping between XR and base release | GBIF results cannot be joined to the backbone by identifier | Largely settled: CoL aims to keep one identifier per name across all releases, base and XR. Phase 2 counts GBIF keys that do not join and sends them through name matching. |
 | BOLD snapshot access | Weekly snapshots drop off the download page after two weeks; downloads may need a BOLD login | Keep a local copy of each pinned snapshot; ask BOLD support for a permanent link, which they offer to data partners. |
-| Run time and disk space | The BOLD snapshot (about 24 million records) and GBIF downloads are large; a GBIF download can take hours | Measure in Phase 0 and size the hub accordingly; resumable steps in the notebook. |
+| Run time and disk space | The BOLD snapshot (about 24 million records) and GBIF downloads are large; a GBIF download can take hours | Measured: peak memory 5 to 6 GB, about 25 GB of disk; a laptop with 16 GB of memory is enough. Resumable steps in the notebook. |
 | Review workload | The legacy list holds about 158,000 names; even a small unresolved share means thousands to review | Prioritise by group; allow a run to complete with unresolved names left out and listed. |
 | False positives from GBIF | One misidentified or out-of-range record puts a species on the list | Keep all evidence per species; report species supported only by a single GBIF record; a stricter rule is one setting. |
 | Undocumented legacy source codes | Codes such as SyDip cannot be explained to users | Compile a code list from gaplist-data and ask the original curators to complete it. |
@@ -280,7 +280,7 @@ The main risk is that the CoL base release lacks species that our evidence suppo
 - [ ] What sets **Wanted** (0, 1 or 2)? Options: everything 1, or 2 for gaps in priority groups listed in a configuration file.
 - [ ] Which BOLD project and dataset codes and institutions count as **own**?
 - [ ] Is **Svalbard and Jan Mayen** (SJ) in or out?
-- [ ] Which **hub** hosts the notebook, and who administers it?
+- [x] Which **hub** hosts the notebook? None: it runs on a laptop (decided 5 November 2026).
 - [ ] How often do we **rerun**? Aligning with BOLD's quarterly snapshots seems natural.
 
 ## Sources
