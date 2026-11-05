@@ -14,6 +14,7 @@ exact release used.
 
 from __future__ import annotations
 
+import re
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,11 +80,12 @@ def _download(url: str, target: Path) -> None:
         if response.status_code == 404:
             raise FileNotFoundError(url)
         response.raise_for_status()
-        if "zip" not in response.headers.get("Content-Type", "zip"):
-            raise SourceError(f"ChecklistBank did not return a zip file from {url}. Try again later.")
         with partial.open("wb") as handle:
             for chunk in response.iter_content(chunk_size=1 << 20):
                 handle.write(chunk)
+    if not zipfile.is_zipfile(partial):
+        partial.unlink()
+        raise SourceError(f"ChecklistBank did not return a zip file from {url}. Try again later.")
     partial.rename(target)
 
 
@@ -109,7 +111,9 @@ def fetch(col_settings: dict) -> Release:
             dataset = _latest_dataset(release_type)
             version = str(dataset.get("issued") or dataset.get("version"))
             key = dataset["key"]
-            urls = [f"{API}/dataset/{key}/export.zip?format=ColDP"]
+            # The extended export holds the full NameUsage table (with the
+            # extinct flag) and the Distribution table; the plain one does not.
+            urls = [f"{API}/dataset/{key}/export.zip?format=ColDP&extended=true"]
         else:
             urls = []
         target = folder / f"{release_type}_{version}_coldp.zip"
@@ -139,13 +143,20 @@ def fetch(col_settings: dict) -> Release:
 
 
 def extract_name_usage(release: Release) -> Path:
-    """Unpack NameUsage.tsv next to the archive (once) and return its path."""
+    """Unpack the name table next to the archive (once) and return its path.
+
+    Extended ColDP exports call it NameUsage.tsv. The plain exports offered on
+    the CoL website hold the same table as a single dataset-<key>.tsv file.
+    """
     target = release.path.with_suffix("") / "NameUsage.tsv"
     if target.exists():
         return target
     with zipfile.ZipFile(release.path) as archive:
-        members = [n for n in archive.namelist() if n.rsplit("/", 1)[-1] == "NameUsage.tsv"]
-        if not members:
+        names = archive.namelist()
+        members = [n for n in names if n.rsplit("/", 1)[-1] == "NameUsage.tsv"] or [
+            n for n in names if re.fullmatch(r"dataset-\d+\.tsv", n.rsplit("/", 1)[-1])
+        ]
+        if len(members) != 1:
             raise SourceError(
                 f"{release.path.name} has no NameUsage.tsv. Make sure it is a ColDP download "
                 "of the Catalogue of Life, not a DwC-A or TextTree download."

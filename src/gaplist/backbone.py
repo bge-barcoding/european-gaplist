@@ -49,8 +49,11 @@ class BackboneResult:
         return f"[{'OK' if self.ok else 'PROBLEM'}] {self.message}"
 
 
-def load_name_usage(con: duckdb.DuckDBPyConnection, tsv: Path) -> None:
-    """Load NameUsage.tsv into a scratch table ``col_usage``."""
+def load_name_usage(con: duckdb.DuckDBPyConnection, tsv: Path) -> bool:
+    """Load NameUsage.tsv into a scratch table ``col_usage``.
+
+    Returns whether the file has an extinct column.
+    """
     header = tsv.open(encoding="utf-8").readline().rstrip("\n\r").split("\t")
     plain = {h: h.split(":", 1)[-1] for h in header}
     missing = [c for c in ("ID", "parentID", "status", "rank", "scientificName") if c not in plain.values()]
@@ -73,6 +76,7 @@ def load_name_usage(con: duckdb.DuckDBPyConnection, tsv: Path) -> None:
         """,
         [str(tsv)],
     )
+    return "extinct" in plain.values()
 
 
 def _is_true(value: str | None) -> bool:
@@ -205,7 +209,7 @@ def build_backbone(settings: Settings | None = None, database: Path | None = Non
     database = database or paths.database_path()
     con = db.connect(database)
     try:
-        load_name_usage(con, tsv)
+        has_extinct = load_name_usage(con, tsv)
         try:
             tree = build_tree(con, settings.col["kingdoms"], settings.col["exclude_extinct"])
         except SettingsError as err:
@@ -237,6 +241,11 @@ def build_backbone(settings: Settings | None = None, database: Path | None = Non
         f"{counts['infraspecific']:,} subspecies and other infraspecific taxa, counted with their species.",
         f"{counts['synonyms']:,} synonyms, available for name matching in the next step.",
     ]
+    if settings.col["exclude_extinct"] and not has_extinct:
+        lines.append(
+            "Warning: this release file has no extinct flags, so extinct taxa could not be left out. "
+            "Use the extended ColDP download to fix this."
+        )
     if counts["no_family"] or counts["no_class"]:
         lines.append(
             f"Note: {counts['no_family']:,} species have no family and {counts['no_class']:,} no class "

@@ -57,6 +57,7 @@ class SettingsError(Exception):
 class Settings:
     europe: list[str]
     col: dict[str, Any]
+    legacy: dict[str, Any]
     bold: dict[str, Any]
     gbif: dict[str, Any]
     evidence: dict[str, Any]
@@ -122,8 +123,9 @@ def _check_europe(data: dict[str, Any], problems: list[str]) -> list[str]:
     return clean
 
 
-def _check_sources(data: dict[str, Any], problems: list[str]) -> tuple[dict, dict, dict, dict]:
+def _check_sources(data: dict[str, Any], problems: list[str]) -> tuple[dict, dict, dict, dict, dict]:
     col = data.get("col") or {}
+    legacy = data.get("legacy") or {}
     bold = data.get("bold") or {}
     gbif = data.get("gbif") or {}
     evidence = data.get("evidence") or {}
@@ -136,6 +138,11 @@ def _check_sources(data: dict[str, Any], problems: list[str]) -> tuple[dict, dic
         problems.append("sources.yaml: col 'kingdoms' must list at least one kingdom, for example Animalia.")
     if not isinstance(col.get("exclude_extinct"), bool):
         problems.append("sources.yaml: col 'exclude_extinct' must be true or false.")
+
+    if not re.match(r"^[\w.-]+/[\w.-]+$", str(legacy.get("repository", ""))):
+        problems.append("sources.yaml: legacy 'repository' must look like owner/name, e.g. bge-barcoding/gaplist-data.")
+    if not re.match(r"^[0-9a-f]{40}$", str(legacy.get("commit", ""))):
+        problems.append("sources.yaml: legacy 'commit' must be the full 40-character commit code from GitHub.")
 
     if not DATE_OR_LATEST.match(str(bold.get("snapshot", ""))):
         problems.append("sources.yaml: bold 'snapshot' must be 'latest' or a date written as YYYY-MM-DD.")
@@ -151,7 +158,7 @@ def _check_sources(data: dict[str, Any], problems: list[str]) -> tuple[dict, dic
     if not isinstance(min_sources, int) or min_sources < 1:
         problems.append("sources.yaml: evidence 'min_sources' must be a whole number of 1 or more.")
 
-    return col, bold, gbif, evidence
+    return col, legacy, bold, gbif, evidence
 
 
 def _check_own(data: dict[str, Any], problems: list[str]) -> tuple[list[str], list[str]]:
@@ -213,7 +220,7 @@ def load_settings(folder: Path | None = None) -> Settings:
     problems: list[str] = []
 
     europe = _check_europe(_read_yaml(folder / "europe.yaml", problems), problems)
-    col, bold, gbif, evidence = _check_sources(_read_yaml(folder / "sources.yaml", problems), problems)
+    col, legacy, bold, gbif, evidence = _check_sources(_read_yaml(folder / "sources.yaml", problems), problems)
     projects, institutions = _check_own(_read_yaml(folder / "own_barcodes.yaml", problems), problems)
     curation = _read_curation(folder / "curation.tsv", problems)
 
@@ -223,6 +230,7 @@ def load_settings(folder: Path | None = None) -> Settings:
     return Settings(
         europe=europe,
         col=col,
+        legacy=legacy,
         bold=bold,
         gbif=gbif,
         evidence=evidence,
