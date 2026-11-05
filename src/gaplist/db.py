@@ -19,6 +19,7 @@ TABLES = [
     "marker",
     "specimen",
     "barcode",
+    "barcode_status",
 ]
 
 

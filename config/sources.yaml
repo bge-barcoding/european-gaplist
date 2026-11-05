@@ -38,7 +38,12 @@ legacy:
 # --- BOLD: which species already have barcodes ----------------------------
 bold:
   # Date of the public BOLD data package (snapshot) to use, as YYYY-MM-DD.
-  # "latest" means: use the newest snapshot. Phase 3 fixes a date.
+  # "latest" means: use whichever snapshot is in data/bold/manual/.
+  #
+  # How to get a snapshot: log in at BOLD, open the Data Packages page
+  # (https://v5.boldsystems.org/?p=21708), download a snapshot (the TSV or
+  # Parquet version), and put the downloaded file, as it is, in the folder
+  # data/bold/manual/. Quarterly snapshots stay available for a year.
   snapshot: latest
   # Only these markers count as a barcode.
   markers:
