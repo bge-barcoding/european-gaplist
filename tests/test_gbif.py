@@ -111,3 +111,6 @@ def test_evidence(workspace):
     assert outcomes == {"Aagaardia sivertseni": "exact", "Nusquam inventus": "unmatched"}
     assert con.execute("SELECT gbif_download_key, gbif_alien_download_key FROM run").fetchone() == (
         "0001-main", "0002-alien")
+    import pandas as pd
+    review = pd.read_excel(workspace / "review" / "gbif_names.xlsx", sheet_name="Names to review")
+    assert list(review.original_name) == ["Nusquam inventus"] and list(review.records) == [1]

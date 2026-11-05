@@ -13,6 +13,11 @@ COLUMNS = [
     "identification_rank", "country_iso", "marker_code", "nuc_basecount", "bold_recordset_code_arr", "nuc",
 ]
 ROWS = [
+    # a misspelt name, two specimens: goes to review with a suggestion
+    ["P9", "S9", "CBG", "NA", "Animalia", "Arthropoda", "Insecta", "Diptera",
+     "Chironomidae", "Aagaardia protenza", "species", "NO", "COI-5P", "300", "NA", "ACGT"],
+    ["P10", "S10", "CBG", "NA", "Animalia", "Arthropoda", "Insecta", "Diptera",
+     "Chironomidae", "Aagaardia protenza", "species", "NO", "COI-5P", "300", "NA", "ACGT"],
     # protensa, Netherlands, compliant, in an "own" project
     ["P1", "S1", "Naturalis Biodiversity Center", "BOLD:AAA0001", "Animalia", "Arthropoda", "Insecta", "Diptera",
      "Chironomidae", "Aagaardia protensa", "species", "NL", "COI-5P", "658", "BGENL,DS-TEST", "ACGT"],
@@ -74,7 +79,11 @@ def check_results(workspace, result):
     evidence = dict(con.execute("SELECT taxon_id, record_count FROM evidence WHERE source = 'bold'").fetchall())
     assert evidence == {"7": 2, "12": 1}  # specimens from Europe, compliant or not
     assert con.execute("SELECT bold_snapshot FROM run").fetchone()[0] == "2026-05-22"
-    assert con.execute("SELECT count(*) FROM specimen").fetchone()[0] == 6  # plant and COI-3P left out
+    assert con.execute("SELECT count(*) FROM specimen").fetchone()[0] == 8  # plant and COI-3P left out
+    import pandas as pd
+    review = pd.read_excel(workspace / "review" / "bold_names.xlsx", sheet_name="Names to review")
+    row = review[review.original_name == "Aagaardia protenza"].iloc[0]
+    assert (row.suggestion, row.specimens) == ("Aagaardia protensa", 2)
     return result
 
 

@@ -133,42 +133,6 @@ def store_evidence(con, results: pd.DataFrame, records: list[LegacyRecord]) -> i
     return len(frame)
 
 
-def write_review(con, results: pd.DataFrame, records: list[LegacyRecord], target: Path) -> int:
-    """A spreadsheet of names needing a person, laid out to copy into curation.tsv."""
-    todo = results[results.outcome.isin(["review", "unmatched"])].copy()
-    hints = {r.name: r.hints for r in records}
-    names = dict(con.execute("SELECT taxon_id, name FROM taxon WHERE rank = 'species'").fetchall())
-    todo["suggestion"] = todo.candidates.map(lambda c: names.get(c[0], "") if len(c) else "")
-    todo["other_candidates"] = todo.candidates.map(lambda c: "; ".join(names.get(x, x) for x in c[1:]))
-    for rank in ("family", "order"):
-        todo[f"{rank}_in_source"] = todo.original_name.map(lambda n, r=rank: hints[n][r] or "")
-    todo["decision"] = ""
-    todo["target_name"] = ""
-    todo["curator"] = ""
-    todo["date"] = ""
-    columns = ["source", "original_name", "decision", "target_name", "curator", "date", "outcome",
-               "suggestion", "other_candidates", "family_in_source", "order_in_source", "note"]
-    todo = todo.sort_values(["outcome", "order_in_source", "family_in_source", "original_name"])[columns]
-    explanation = pd.DataFrame(
-        {
-            "How to use this list": [
-                "Each row is a name from the earlier checklist that could not be matched automatically.",
-                "outcome 'review': there is a likely match (see 'suggestion') or several possible ones.",
-                "outcome 'unmatched': no Catalogue of Life name was found, not even a similar one.",
-                "To decide, fill in 'decision': accept (take the suggestion), map (use the name you",
-                "type in 'target_name') or reject (leave the name out). Add your initials and the date.",
-                "Then copy the first six columns of the rows you decided into config/curation.tsv",
-                "and run the notebook section again. Your decisions are kept for all later runs.",
-            ]
-        }
-    )
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with pd.ExcelWriter(target, engine="openpyxl") as writer:
-        explanation.to_excel(writer, sheet_name="Read me", index=False)
-        todo.to_excel(writer, sheet_name="Names to review", index=False)
-    return len(todo)
-
-
 def import_legacy(settings: Settings | None = None, database: Path | None = None) -> LegacyResult:
     """Run the legacy checklist step and describe the outcome in plain words."""
     try:
@@ -198,7 +162,9 @@ def import_legacy(settings: Settings | None = None, database: Path | None = None
             con.execute("ROLLBACK")
             raise
         review_file = database.parent / "review" / "legacy_names.xlsx"
-        to_review = write_review(con, results, records, review_file)
+        to_review = resolve.write_review(
+            con, results, {r.name: r.hints for r in records}, review_file, "the earlier checklist"
+        )
     finally:
         con.close()
 
