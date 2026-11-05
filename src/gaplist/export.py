@@ -21,6 +21,7 @@ import pandas as pd
 
 from . import db, paths
 from .config import Settings, SettingsError, load_settings
+from .progress import say
 
 SEED_COLUMNS = [
     "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "SpeciesLocality",
@@ -174,6 +175,7 @@ def export(settings: Settings | None = None, database: Path | None = None) -> Ex
     try:
         if not con.execute("SELECT count(*) FROM evidence").fetchone()[0]:
             return ExportResult(False, "There is no evidence yet. Run the sections of step 2 first.")
+        say("Combining the evidence and the barcode counts...")
         table = build_table(con, settings)
         seed = seed_rows(table, settings)
         problems, notes = check_seed(seed)

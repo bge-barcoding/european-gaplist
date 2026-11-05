@@ -23,6 +23,7 @@ import pandas as pd
 
 from . import col_source, db, paths
 from .config import Settings, SettingsError, load_settings
+from .progress import bar, say
 
 ACCEPTED = ("accepted", "provisionally accepted")
 SYNONYMS = ("synonym", "ambiguous synonym", "misapplied")
@@ -117,35 +118,39 @@ def build_tree(con: duckdb.DuckDBPyConnection, kingdoms: list[str], exclude_exti
 
     out: list[tuple] = []
     counter = 0
-    for root in sorted(roots, key=lambda r: info[r][2]):
-        # Each stack entry: (taxon id, inherited ranks, inherited species id, entering?)
-        stack: list[tuple] = [(root, {}, None, True)]
-        open_rows: dict[str, int] = {}
-        while stack:
-            taxon_id, ranks, species_id, entering = stack.pop()
-            if not entering:
+    say(f"Building the classification of {', '.join(kingdoms)}...")
+    with bar(None, "Taxa placed", unit=" taxa") as progress:
+        for root in sorted(roots, key=lambda r: info[r][2]):
+            # Each stack entry: (taxon id, inherited ranks, inherited species id, entering?)
+            stack: list[tuple] = [(root, {}, None, True)]
+            open_rows: dict[str, int] = {}
+            while stack:
+                taxon_id, ranks, species_id, entering = stack.pop()
+                if not entering:
+                    counter += 1
+                    out[open_rows.pop(taxon_id)][6] = counter
+                    continue
+                parent_id, rank, name, authorship, extinct, xr_added = info[taxon_id]
+                if exclude_extinct and extinct:
+                    continue  # skip the whole subtree
+                ranks = dict(ranks)
+                if rank in FIXED_RANKS:
+                    # the web app shows species without subgenus
+                    ranks[rank] = SUBGENUS.sub("", name) if rank == "species" else name
+                if rank == "species":
+                    species_id = taxon_id
                 counter += 1
-                out[open_rows.pop(taxon_id)][6] = counter
-                continue
-            parent_id, rank, name, authorship, extinct, xr_added = info[taxon_id]
-            if exclude_extinct and extinct:
-                continue  # skip the whole subtree
-            ranks = dict(ranks)
-            if rank in FIXED_RANKS:
-                # the web app shows species without subgenus
-                ranks[rank] = SUBGENUS.sub("", name) if rank == "species" else name
-            if rank == "species":
-                species_id = taxon_id
-            counter += 1
-            open_rows[taxon_id] = len(out)
-            out.append(
-                [taxon_id, parent_id, rank, name, authorship, counter, None]
-                + [ranks.get(r) for r in FIXED_RANKS]
-                + [species_id, xr_added]
-            )
-            stack.append((taxon_id, ranks, species_id, False))
-            for child in sorted(children.get(taxon_id, []), key=lambda c: info[c][2], reverse=True):
-                stack.append((child, ranks, species_id, True))
+                open_rows[taxon_id] = len(out)
+                if len(out) % 10000 == 0:
+                    progress.update(10000)
+                out.append(
+                    [taxon_id, parent_id, rank, name, authorship, counter, None]
+                    + [ranks.get(r) for r in FIXED_RANKS]
+                    + [species_id, xr_added]
+                )
+                stack.append((taxon_id, ranks, species_id, False))
+                for child in sorted(children.get(taxon_id, []), key=lambda c: info[c][2], reverse=True):
+                    stack.append((child, ranks, species_id, True))
 
     columns = ["taxon_id", "parent_id", "rank", "name", "authorship", "lft", "rgt", *FIXED_RANKS, "species_id",
                "xr_added"]
@@ -219,11 +224,13 @@ def build_backbone(settings: Settings | None = None, database: Path | None = Non
     database = database or paths.database_path()
     con = db.connect(database)
     try:
+        say("Reading the names table (about a minute for a full release)...")
         has_extinct = load_name_usage(con, tsv)
         try:
             tree = build_tree(con, settings.col["kingdoms"], settings.col["exclude_extinct"])
         except SettingsError as err:
             return BackboneResult(False, str(err))
+        say("Saving the classification and the synonyms...")
         # All or nothing: an interrupted rebuild leaves the previous backbone intact.
         con.execute("BEGIN TRANSACTION")
         try:

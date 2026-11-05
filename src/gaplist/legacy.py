@@ -17,6 +17,7 @@ import requests
 
 from . import db, paths, resolve
 from .config import Settings, SettingsError, load_settings
+from .progress import say
 
 SOURCE = "legacy"
 FILES = ("Gap_list_all_updated.csv", "all_specs_and_syn.csv")
@@ -146,6 +147,7 @@ def import_legacy(settings: Settings | None = None, database: Path | None = None
     try:
         if not con.execute("SELECT count(*) FROM taxon").fetchone()[0]:
             return LegacyResult(False, "There is no backbone yet. Run section 1 first.")
+        say("Reading the earlier checklist...")
         records, code_counts = read_records(folder)
         queries = [resolve.Query(SOURCE, r.name, r.hints, r.alternatives) for r in records]
         results = resolve.resolve(con, queries, settings.curation)
@@ -161,6 +163,7 @@ def import_legacy(settings: Settings | None = None, database: Path | None = None
         except Exception:
             con.execute("ROLLBACK")
             raise
+        say("Writing the list of names to review...")
         review_file = database.parent / "review" / "legacy_names.xlsx"
         to_review = resolve.write_review(
             con, results, {r.name: r.hints for r in records}, review_file, "the earlier checklist"

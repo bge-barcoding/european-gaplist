@@ -123,8 +123,20 @@ needed only once.)
 ### Run the sections
 
 Run the sections of the notebook in order. To run a cell, click in it and
-press **Shift + Enter**. While a cell runs, a `[*]` shows to its left; when it
-is done, a number appears and the result is printed below the cell.
+press **Shift + Enter**. While a cell runs, a `[*]` shows to its left and
+the circle at the top right of the notebook is filled in: Python is busy.
+Meanwhile the cell prints what it is doing, each line with the time, and
+shows progress bars for long parts such as downloads:
+
+```
+08:53:36  Unpacking the names table. This is done only once per release.
+Unpacking: 100%|██████████| 3.32G/3.32G [01:18<00:00, 45.2MB/s]
+08:54:56  Reading the names table (about a minute for a full release)...
+```
+
+Some parts run for a minute or more without a progress bar; as long as the
+`[*]` shows, the step is working. When it is done, a number replaces the
+`[*]` and the result is printed below the progress lines.
 
 Every result starts with one of these:
 

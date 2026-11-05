@@ -23,6 +23,7 @@ import requests
 import yaml
 
 from . import paths
+from .progress import bar, say
 
 API = "https://api.checklistbank.org"
 ARCHIVE = "https://download.checklistbank.org/col"
@@ -80,9 +81,11 @@ def _download(url: str, target: Path) -> None:
         if response.status_code == 404:
             raise FileNotFoundError(url)
         response.raise_for_status()
-        with partial.open("wb") as handle:
+        size = int(response.headers.get("Content-Length") or 0) or None
+        with partial.open("wb") as handle, bar(size, "Downloading", unit="B") as progress:
             for chunk in response.iter_content(chunk_size=1 << 20):
                 handle.write(chunk)
+                progress.update(len(chunk))
     if not zipfile.is_zipfile(partial):
         partial.unlink()
         raise SourceError(f"ChecklistBank did not return a zip file from {url}. Try again later.")
@@ -100,6 +103,7 @@ def fetch(col_settings: dict) -> Release:
     """Return the release to use, downloading it if needed."""
     manual = _manual_file()
     if manual:
+        say(f"Using the release file you put in data/col/manual/: {manual.name}")
         return describe(manual)
 
     release_type = col_settings["release_type"]
@@ -108,6 +112,7 @@ def fetch(col_settings: dict) -> Release:
 
     try:
         if version == "latest":
+            say("Asking ChecklistBank which Catalogue of Life release is the newest...")
             dataset = _latest_dataset(release_type)
             version = str(dataset.get("issued") or dataset.get("version"))
             key = dataset["key"]
@@ -118,7 +123,10 @@ def fetch(col_settings: dict) -> Release:
             urls = []
         target = folder / f"{release_type}_{version}_coldp.zip"
         if target.exists():
+            say(f"Using the copy of the {release_type} release {version} downloaded earlier.")
             return describe(target)
+        say(f"Downloading the {release_type} release {version} from ChecklistBank. This is done only once "
+            "per release.")
         if release_type == "base":
             urls.append(f"{ARCHIVE}/monthly/{version}_coldp.zip")
         for url in urls:
@@ -162,7 +170,10 @@ def extract_name_usage(release: Release) -> Path:
                 "of the Catalogue of Life, not a DwC-A or TextTree download."
             )
         target.parent.mkdir(parents=True, exist_ok=True)
-        with archive.open(members[0]) as source, target.open("wb") as sink:
+        size = archive.getinfo(members[0]).file_size
+        say("Unpacking the names table. This is done only once per release.")
+        with archive.open(members[0]) as source, target.open("wb") as sink, bar(size, "Unpacking", unit="B") as progress:
             while chunk := source.read(1 << 20):
                 sink.write(chunk)
+                progress.update(len(chunk))
     return target

@@ -33,6 +33,7 @@ import duckdb
 import pandas as pd
 
 from .names import parse
+from .progress import say
 
 RESOLVED = ("exact", "synonym", "disambiguated", "alternative_name", "curated")
 HINT_RANKS = ("family", "order", "class", "phylum")
@@ -129,6 +130,7 @@ def _near_matches(con, rows: pd.DataFrame) -> pd.DataFrame:
 
 def resolve(con: duckdb.DuckDBPyConnection, queries: list[Query], curation: list[dict[str, str]]) -> pd.DataFrame:
     """Resolve names and return one row per query (not yet stored)."""
+    say(f"Matching {len(queries):,} names to Catalogue of Life...")
     _candidate_tables(con)
     parsed = [parse(q.original_name) for q in queries]
     results: list[dict] = [
@@ -195,6 +197,7 @@ def resolve(con: duckdb.DuckDBPyConnection, queries: list[Query], curation: list
             results[qid].update(outcome="alternative_name", taxon_id=chosen)
             note(qid, "matched through a name the source lists as a synonym")
 
+    say(f"Looking for near matches (spelling differences) for {len(open_ids()):,} names not yet matched...")
     # 4: near matches (spelling, gender endings) are never accepted automatically.
     near_rows = pd.DataFrame(
         [(i, parsed[i].genus, parsed[i].epithet) for i in open_ids()], columns=["qid", "genus", "epithet"]
