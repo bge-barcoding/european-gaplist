@@ -23,6 +23,16 @@ col:
   # hand and put it in the folder data/col/manual/. The pipeline then uses
   # that file and reads its version from the file itself.
 
+# --- The earlier European checklist ---------------------------------------
+# The manually compiled list from the previous gap list (national
+# checklists, Fauna Europaea and others). It no longer changes, so it is
+# fixed to one version (a "commit") of its GitHub repository.
+legacy:
+  repository: bge-barcoding/gaplist-data
+  commit: 781f6a85f0af998636247f922a120ea00b889f79
+  # If GitHub cannot be reached, put the two files Gap_list_all_updated.csv
+  # and all_specs_and_syn.csv in the folder data/legacy/manual/.
+
 # --- BOLD: which species already have barcodes ----------------------------
 bold:
   # Date of the public BOLD data package (snapshot) to use, as YYYY-MM-DD.

@@ -129,3 +129,18 @@ def test_two_manual_files_are_refused(workspace):
     result, _ = run(workspace)
     assert not result.ok
     assert "more than one zip file" in result.message
+
+
+def test_plain_export_layout_is_accepted(workspace):
+    """The plain CoL export holds the name table as dataset-<key>.tsv."""
+    manual = workspace / "col" / "manual"
+    (manual / "test_coldp.zip").unlink()
+    with zipfile.ZipFile(manual / "plain.zip", "w") as archive:
+        archive.writestr("metadata.yaml", METADATA)
+        plain = "\n".join(line.rsplit("\t", 1)[0] for line in NAME_USAGE.splitlines()) + "\n"
+        archive.writestr("dataset-316595.tsv", plain)
+    result, con = run(workspace)
+    assert result.ok, result.message
+    # without an extinct column the fossil species cannot be left out, and the user is told so
+    assert con.execute("SELECT count(*) FROM taxon WHERE rank = 'species'").fetchone()[0] == 4
+    assert "has no extinct flags" in result.message
