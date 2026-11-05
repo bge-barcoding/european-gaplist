@@ -45,23 +45,29 @@ class Query:
     alternatives: tuple[str, ...] = ()
 
 
+# CoL writes species in a subgenus as "Lithobius (Lithobius) forficatus";
+# source names are matched without the subgenus, so CoL's are too.
+PLAIN = "trim(regexp_replace({col}, '\\s*\\([^)]*\\)', '', 'g'))"
+
+
 def _candidate_tables(con: duckdb.DuckDBPyConnection) -> None:
     """Lookup tables: every name that leads to a species, accepted or synonym."""
     con.execute(
-        """
+        f"""
         CREATE OR REPLACE TEMP TABLE accepted_names AS
-        SELECT name, species_id, family, "order", class, phylum
+        SELECT {PLAIN.format(col="name")} AS name, species_id, family, "order", class, phylum
         FROM taxon WHERE species_id IS NOT NULL;
 
         CREATE OR REPLACE TEMP TABLE synonym_names AS
-        SELECT s.name, s.synonym_id, t.species_id, t.family, t."order", t.class, t.phylum
+        SELECT {PLAIN.format(col="s.name")} AS name, s.synonym_id, t.species_id,
+               t.family, t."order", t.class, t.phylum
         FROM synonym s JOIN taxon t ON t.taxon_id = s.accepted_id
         WHERE t.species_id IS NOT NULL;
 
         CREATE OR REPLACE TEMP TABLE species_epithets AS
-        SELECT taxon_id AS species_id, name, split_part(name, ' ', 1) AS genus,
-               split_part(name, ' ', 2) AS epithet
-        FROM taxon WHERE rank = 'species';
+        SELECT taxon_id AS species_id, name, split_part(plain, ' ', 1) AS genus,
+               split_part(plain, ' ', 2) AS epithet
+        FROM (SELECT *, {PLAIN.format(col="name")} AS plain FROM taxon WHERE rank = 'species');
         """
     )
 

@@ -18,6 +18,7 @@ col:ID\tcol:parentID\tcol:status\tcol:rank\tcol:scientificName\tcol:authorship\t
 6\t5\taccepted\tgenus\tAagaardia\tSaether, 2000\t
 7\t6\taccepted\tspecies\tAagaardia protensa\t(Brundin, 1947)\t
 8\t7\taccepted\tsubspecies\tAagaardia protensa minor\tDoe, 2001\t
+20\t7\taccepted\tunranked\tBOLD:AAD4010\t\t
 9\t6\tprovisionally accepted\tspecies\tAagaardia sivertseni\t(Saether, 1979)\t
 10\t7\tsynonym\tspecies\tAagaardia oldname\tRoe, 1950\t
 19\t9\tambiguous synonym\tspecies\tAagaardia dubia\t\t
@@ -69,6 +70,8 @@ def test_backbone_contents(workspace):
     # extinct genus, bare name and other kingdoms are left out
     assert species == {"Aagaardia protensa", "Aagaardia sivertseni", "Orphanus solus"}
     assert "3 species in Animalia" in result.message
+    assert "1 subspecies" in result.message  # the BOLD BIN under protensa is not counted
+    assert con.execute("SELECT count(*) FROM taxon WHERE name LIKE 'BOLD:%'").fetchone()[0] == 0
 
 
 def test_fixed_ranks_and_species_link(workspace):
@@ -144,3 +147,21 @@ def test_plain_export_layout_is_accepted(workspace):
     # without an extinct column the fossil species cannot be left out, and the user is told so
     assert con.execute("SELECT count(*) FROM taxon WHERE rank = 'species'").fetchone()[0] == 4
     assert "has no extinct flags" in result.message
+
+
+def test_xr_added_flag(workspace):
+    """Names the eXtended Release adds carry clb:merged = true and are flagged."""
+    manual = workspace / "col" / "manual"
+    (manual / "test_coldp.zip").unlink()
+    lines = NAME_USAGE.splitlines()
+    rows = [lines[0] + "\tclb:merged"] + [
+        line + ("\ttrue" if "Orphanus solus" in line else "\tfalse") for line in lines[1:]
+    ]
+    with zipfile.ZipFile(manual / "xr.zip", "w") as archive:
+        archive.writestr("metadata.yaml", METADATA)
+        archive.writestr("NameUsage.tsv", "\n".join(rows) + "\n")
+    result, con = run(workspace, release_type="xr")
+    assert result.ok, result.message
+    flagged = {r[0] for r in con.execute("SELECT name FROM taxon WHERE xr_added").fetchall()}
+    assert flagged == {"Orphanus solus"}
+    assert "1 of these species come only from the eXtended Release" in result.message

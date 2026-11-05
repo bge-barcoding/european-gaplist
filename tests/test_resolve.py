@@ -15,6 +15,8 @@ TAXA = [
     ("h1", "g4", "species", "Duplex communis", "Carabidae", "Coleoptera", "Insecta", "Arthropoda", "h1"),
     ("h2", "g5", "species", "Duplex communis", "Pyralidae", "Lepidoptera", "Insecta", "Arthropoda", "h2"),
     ("s5", "g6", "species", "Cryptocephalus eridani", "Chrysomelidae", "Coleoptera", "Insecta", "Arthropoda", "s5"),
+    ("s7", "g8", "species", "Lithobius (Lithobius) forficatus", "Lithobiidae", "Lithobiomorpha", "Chilopoda",
+     "Arthropoda", "s7"),
     ("s6", "g7", "species", "Lycaena helle", "Lycaenidae", "Lepidoptera", "Insecta", "Arthropoda", "s6"),
 ]
 SYNONYMS = [("y1", "Aagaardia oldname", "synonym", "s1"), ("y2", "Lycaena amphidamas", "synonym", "s6")]
@@ -51,6 +53,12 @@ def test_subgenus_and_subspecies_count_with_species(con):
     assert outcome(con, q("Aagaardia (Aagaardia) protensa"))[:2] == ("exact", "s1")
     assert outcome(con, q("Aagaardia protensa minor"))[:2] == ("exact", "s1")
     assert outcome(con, q("Aagaardia protensa nonexistens"))[:2] == ("exact", "s1")
+
+
+def test_col_subgenus_is_ignored(con):
+    assert outcome(con, q("Lithobius forficatus"))[:2] == ("exact", "s7")
+    assert outcome(con, q("Lithobius (Monotarsobius) forficatus"))[:2] == ("exact", "s7")
+    assert outcome(con, q("Lithobius forficata")) == ("review", None, ["s7"])
 
 
 def test_synonym(con):
