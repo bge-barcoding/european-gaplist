@@ -43,7 +43,7 @@ The workflow keeps the shape of the current one (collate, normalise, enrich, fla
 title: Five stages turn public sources into the target list
 ---
 flowchart LR
-    col["CoL base release (ColDP)"]
+    col["CoL XR release (ColDP)"]
     legacy["Legacy checklist"]
     gbif["GBIF species list"]
     bold["BOLD BCDM snapshot"]
@@ -294,36 +294,38 @@ A separate developer guide covers the package layout, tests and how to add a new
 
 ## Milestones and effort
 
-A first release takes about 13 weeks of one developer's time, with the notebook and documentation built alongside the European list, barcodes and export.
+All six phases were built and tested on 4 and 5 November 2026, with AI assistance, against an original estimate of 13 weeks of one developer's time. The first full run on real data followed the same day (171,748 European species, 100,464 gaps).
 
 ```mermaid
 ---
-title: A first release in about 13 weeks of one developer
+title: Built in two days; what remains needs people, not code
 ---
 flowchart LR
-    p0["<b>Phase 0</b><br/>Foundations<br/>2 weeks"]
-    g0{"Hub runs,<br/>XR ids checked"}
-    p1["<b>Phase 1</b><br/>CoL backbone<br/>2 weeks"]
-    g1{"Backbone report<br/>reviewed"}
-    p2["<b>Phase 2</b><br/>European list<br/>4 to 5 weeks"]
-    g2{"Base or XR decided,<br/>review load known"}
-    p3["<b>Phase 3</b><br/>Barcodes<br/>2 to 3 weeks"]
-    g3{"Counts checked<br/>against BOLD"}
-    p4["<b>Phase 4</b><br/>Export to app<br/>2 weeks"]
-    release{"<b>Release:</b> staging<br/>and user test pass"}
-    p5["<b>Phase 5</b><br/>Notebook and docs,<br/>3 weeks alongside"]
+    subgraph done ["Done"]
+        built["<b>Phases 0 to 5</b><br/>built and tested<br/>4 and 5 November"]
+        run["<b>First full run</b><br/>171,748 species<br/>100,464 gaps"]
+    end
+    subgraph todo ["Still to do"]
+        own["<b>Fix BGE own-barcode count</b><br/>known bug, before the website"]
+        decisions["<b>Three decisions</b><br/>evidence, XR-only, BGE projects"]
+        website["<b>First live website update</b><br/>needs database access"]
+        auth["<b>Trial run at AUTH</b><br/>from the documentation alone"]
+        names["<b>Name review</b><br/>about 49,000 names, ongoing"]
+    end
+    release{"<b>Release</b><br/>first list from<br/>new pipeline"}
 
-    p0 --> g0 --> p1 --> g1 --> p2 --> g2 --> p3 --> g3 --> p4 --> release
-    g1 -.-> p5
-    p5 --> release
+    built --> run
+    run --> own & decisions & website & auth & names
+    own & decisions & website & auth --> release
+    names -.-> release
 
+    classDef finished stroke-width:2px
     classDef accent stroke-width:2px
+    class built,run finished
     class release accent
 ```
 
-*Estimates, not to scale. Curator time for name review comes on top.*
-
-Each diamond is a gate: the next phase starts only when its condition is met. The gate after Phase 2 is the important one, because the base-versus-XR decision is taken there, with numbers in hand. These are estimates; the size of the name review is the largest unknown and is measured at that gate.
+What remains is mostly work for people rather than code: one known bug, three decisions for the steering group, access to the live website, a trial run at AUTH, and name review. Name review (about 32,500 BOLD names, 13,400 from the previous checklist and 3,400 from GBIF) will go on after the first release; the BOLD names with the most specimens should be done first, because they can hide existing barcodes. No dates have been set yet for these items.
 
 ## Risks and open points
 
