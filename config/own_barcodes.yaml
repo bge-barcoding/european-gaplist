@@ -12,8 +12,40 @@
 #     "Institution storing" field.
 #   - Leave a list empty ([]) if you do not want to use it.
 #
-# This list is still to be agreed (see the roadmap, open points).
+# "Own" means: produced by the BGE project (decided 5 November 2026).
+# The project codes below are those in the BGE container on BOLD, taken
+# from the container export in gaplist-data (May 2025). If BGE projects
+# have been added to the container since, add their codes here.
 
-projects: []
+projects:
+  - ALPFU
+  - BBIOP
+  - BCEMI
+  - BGEGR
+  - BGENL
+  - BGEPL
+  - BGETR
+  - BGLIB
+  - BGSND
+  - BGSNH
+  - BGSNL
+  - BHNHM
+  - BIOSC
+  - BSCRO
+  - BSNHM
+  - BSNTN
+  - BSUIO
+  - DTAUT
+  - DTBIO
+  - DTKNU
+  - DTULO
+  - EBGEP
+  - ILECA
+  - INVBG
+  - MEAMP
+  - MUSBA
+  - NHMCG
+  - UMBGE
+  - UNIFI
 
 institutions: []

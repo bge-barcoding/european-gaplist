@@ -63,6 +63,7 @@ class Settings:
     evidence: dict[str, Any]
     own_projects: list[str]
     own_institutions: list[str]
+    target_list: dict[str, Any] = field(default_factory=dict)
     curation: list[dict[str, str]] = field(default_factory=list)
     fingerprint: str = ""
 
@@ -170,6 +171,30 @@ def _check_own(data: dict[str, Any], problems: list[str]) -> tuple[list[str], li
     return [str(p).strip() for p in projects], [str(i).strip() for i in institutions]
 
 
+FIXED_RANKS = ("kingdom", "phylum", "class", "order", "family", "genus", "species")
+
+
+def _check_target_list(data: dict[str, Any], problems: list[str]) -> dict[str, Any]:
+    wanted = data.get("wanted") or {}
+    for key in ("default", "priority"):
+        if wanted.get(key) not in (0, 1, 2):
+            problems.append(f"target_list.yaml: wanted '{key}' must be 0, 1 or 2.")
+    groups = wanted.get("priority_groups") or []
+    if not isinstance(groups, list):
+        problems.append("target_list.yaml: 'priority_groups' must be a list (or []).")
+        groups = []
+    for group in groups:
+        if not (isinstance(group, dict) and len(group) == 1 and next(iter(group)) in FIXED_RANKS):
+            problems.append(
+                f"target_list.yaml: priority group {group!r} must be one rank and a name, e.g. 'order: Coleoptera'."
+            )
+    if not isinstance(data.get("collected"), int) or data.get("collected", -1) < 0:
+        problems.append("target_list.yaml: 'collected' must be a whole number, for example 0.")
+    if not isinstance(data.get("include_xr_only"), bool):
+        problems.append("target_list.yaml: 'include_xr_only' must be true or false.")
+    return data
+
+
 def _read_curation(path: Path, problems: list[str]) -> list[dict[str, str]]:
     if not path.exists():
         problems.append("curation.tsv is missing. Restore it from GitHub.")
@@ -203,7 +228,7 @@ def _read_curation(path: Path, problems: list[str]) -> list[dict[str, str]]:
 def _fingerprint(folder: Path) -> str:
     """A short code that changes whenever any settings file changes."""
     digest = hashlib.sha256()
-    for name in ("europe.yaml", "sources.yaml", "own_barcodes.yaml", "curation.tsv"):
+    for name in ("europe.yaml", "sources.yaml", "own_barcodes.yaml", "target_list.yaml", "curation.tsv"):
         path = folder / name
         if path.exists():
             digest.update(name.encode())
@@ -222,6 +247,7 @@ def load_settings(folder: Path | None = None) -> Settings:
     europe = _check_europe(_read_yaml(folder / "europe.yaml", problems), problems)
     col, legacy, bold, gbif, evidence = _check_sources(_read_yaml(folder / "sources.yaml", problems), problems)
     projects, institutions = _check_own(_read_yaml(folder / "own_barcodes.yaml", problems), problems)
+    target_list = _check_target_list(_read_yaml(folder / "target_list.yaml", problems), problems)
     curation = _read_curation(folder / "curation.tsv", problems)
 
     if problems:
@@ -236,6 +262,7 @@ def load_settings(folder: Path | None = None) -> Settings:
         evidence=evidence,
         own_projects=projects,
         own_institutions=institutions,
+        target_list=target_list,
         curation=curation,
         fingerprint=_fingerprint(folder),
     )
