@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS taxon (
 ALTER TABLE taxon ADD COLUMN IF NOT EXISTS species_id VARCHAR;
 -- Added in Phase 2.
 ALTER TABLE run ADD COLUMN IF NOT EXISTS legacy_commit VARCHAR;
+ALTER TABLE run ADD COLUMN IF NOT EXISTS gbif_alien_download_key VARCHAR;
 -- True for taxa the CoL eXtended Release adds to the expert-curated base release.
 ALTER TABLE taxon ADD COLUMN IF NOT EXISTS xr_added BOOLEAN;
 
