@@ -38,7 +38,47 @@ These were agreed on 4 November 2026 and set the scope of the first release. Eac
 
 The workflow keeps the shape of the current one (collate, normalise, enrich, flatten, serve), but every input is public and versioned, and every step runs from one notebook.
 
-&#91;embedded content: target workflow · 5 stages, inputs left, settings and outputs right\]
+```mermaid
+---
+title: Five stages turn public sources into the target list
+---
+flowchart LR
+    col["CoL base release (ColDP)"]
+    legacy["Legacy checklist"]
+    gbif["GBIF species list"]
+    bold["BOLD BCDM snapshot"]
+
+    subgraph notebook ["Run from one notebook"]
+        s1["<b>1. CoL backbone</b><br/>accepted names and synonyms"]
+        s2["<b>2. European filter</b><br/>name resolution, evidence"]
+        s3["<b>3. Barcode status</b><br/>COI-5P of at least 500 bp"]
+        s4["<b>4. Flatten and check</b><br/>seed TSV layout"]
+    end
+
+    europe["europe.yaml"]
+    review["<b>Review lists</b><br/>decisions in curation.tsv"]
+    own["own_barcodes.yaml"]
+    summary["Run summary, full table"]
+    s5["<b>5. Target list web app</b><br/>Postgres on Azure"]
+
+    col --> s1
+    legacy --> s2
+    gbif --> s2
+    bold --> s3
+    s1 --> s2
+    s2 --> s3
+    s3 -- European records --> s2
+    s3 --> s4
+    s4 --> s5
+    europe --> s2
+    s2 --> review
+    review --> s2
+    own --> s3
+    s4 --> summary
+
+    classDef accent stroke-width:2px
+    class s5 accent
+```
 
 Public inputs enter on the left; the settings a user may edit, and the review loop, sit on the right. BOLD feeds stage 3 with barcodes and also returns its European specimen records to stage 2 as evidence of occurrence.
 
@@ -256,7 +296,32 @@ A separate developer guide covers the package layout, tests and how to add a new
 
 A first release takes about 13 weeks of one developer's time, with the notebook and documentation built alongside the European list, barcodes and export.
 
-&#91;embedded content: roadmap · 6 phases, 5 gates\]
+```mermaid
+---
+title: A first release in about 13 weeks of one developer
+---
+flowchart LR
+    p0["<b>Phase 0</b><br/>Foundations<br/>2 weeks"]
+    g0{"Hub runs,<br/>XR ids checked"}
+    p1["<b>Phase 1</b><br/>CoL backbone<br/>2 weeks"]
+    g1{"Backbone report<br/>reviewed"}
+    p2["<b>Phase 2</b><br/>European list<br/>4 to 5 weeks"]
+    g2{"Base or XR decided,<br/>review load known"}
+    p3["<b>Phase 3</b><br/>Barcodes<br/>2 to 3 weeks"]
+    g3{"Counts checked<br/>against BOLD"}
+    p4["<b>Phase 4</b><br/>Export to app<br/>2 weeks"]
+    release{"<b>Release:</b> staging<br/>and user test pass"}
+    p5["<b>Phase 5</b><br/>Notebook and docs,<br/>3 weeks alongside"]
+
+    p0 --> g0 --> p1 --> g1 --> p2 --> g2 --> p3 --> g3 --> p4 --> release
+    g1 -.-> p5
+    p5 --> release
+
+    classDef accent stroke-width:2px
+    class release accent
+```
+
+*Estimates, not to scale. Curator time for name review comes on top.*
 
 Each diamond is a gate: the next phase starts only when its condition is met. The gate after Phase 2 is the important one, because the base-versus-XR decision is taken there, with numbers in hand. These are estimates; the size of the name review is the largest unknown and is measured at that gate.
 
