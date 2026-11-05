@@ -55,6 +55,7 @@ def workspace(tmp_path, monkeypatch):
         archive.writestr("metadata.yaml", METADATA)
         archive.writestr("NameUsage.tsv", NAME_USAGE)
     (data / "bold" / "manual").mkdir(parents=True)
+    (data / "bold" / "manual" / "README.md").write_text("instructions")  # as in the repository
     assert backbone.build_backbone(load_settings(), data / "g.duckdb").ok
     return data
 
