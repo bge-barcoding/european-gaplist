@@ -1,6 +1,6 @@
 # European gaplist update: roadmap
 
-Nov 4, 2026 · @Rutger
+Nov 4, 2026 · @rvosa
 
 ## Summary
 
