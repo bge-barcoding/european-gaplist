@@ -223,6 +223,22 @@ __marimo__/
 # Downloaded inputs and run outputs are never committed
 data/*
 !data/README.md
+# the folders where files are put by hand, with their instructions
+!data/bold/
+data/bold/*
+!data/bold/manual/
+data/bold/manual/*
+!data/bold/manual/README.md
+!data/col/
+data/col/*
+!data/col/manual/
+data/col/manual/*
+!data/col/manual/README.md
+!data/legacy/
+data/legacy/*
+!data/legacy/manual/
+data/legacy/manual/*
+!data/legacy/manual/README.md
 *.duckdb
 *.duckdb.wal
 # Local credentials

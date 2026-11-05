@@ -98,9 +98,9 @@ so this step is done by hand:
 
 1. Log in at BOLD and open the Data Packages page:
    https://v5.boldsystems.org/?p=21708
-2. Download a snapshot, in the TSV or the Parquet version. The quarterly
-   snapshots stay available for a year; use one of those if you want others
-   to be able to repeat your run.
+2. Download a snapshot, preferably in the **Parquet** version (smaller and
+   much faster to read than TSV). The quarterly snapshots stay available for
+   a year; use one of those if you want others to be able to repeat your run.
 3. Move the downloaded file, as it is, into the folder `data/bold/manual/`
    inside `european-gaplist`. Do not unpack or rename it. Keep only one file
    in that folder.
