@@ -40,7 +40,8 @@ each one.
 Work in progress, following the roadmap. Currently in place: the settings
 files, their checks and the database layout (Phase 0), the Catalogue of
 Life backbone (Phase 1), name matching with the earlier European checklist
-and GBIF occurrence evidence (Phase 2).
+and GBIF occurrence evidence (Phase 2), and barcode counts from BOLD
+(Phase 3).
 
 ## For developers
 

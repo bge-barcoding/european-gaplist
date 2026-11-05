@@ -111,3 +111,14 @@ CREATE TABLE IF NOT EXISTS barcode (
     is_compliant    BOOLEAN,           -- meets the marker and length rules
     PRIMARY KEY (processid, marker_code)
 );
+
+-- Barcode status per backbone species (Phase 3).
+CREATE TABLE IF NOT EXISTS barcode_status (
+    taxon_id            VARCHAR PRIMARY KEY,  -- backbone species
+    specimens           INTEGER,  -- public BOLD specimens identified as this species
+    compliant           INTEGER,  -- barcode-compliant sequences, collected anywhere
+    european_compliant  INTEGER,  -- the same, from specimens collected in Europe
+    own                 INTEGER,  -- compliant, from projects or institutions in own_barcodes.yaml
+    other               INTEGER,  -- compliant minus own
+    bins                INTEGER   -- distinct BINs among compliant sequences
+);

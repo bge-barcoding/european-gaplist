@@ -45,9 +45,13 @@ class Query:
     alternatives: tuple[str, ...] = ()
 
 
-# CoL writes species in a subgenus as "Lithobius (Lithobius) forficatus";
-# source names are matched without the subgenus, so CoL's are too.
-PLAIN = "trim(regexp_replace({col}, '\\s*\\([^)]*\\)', '', 'g'))"
+# CoL names are normalised the same way as source names (see names.py):
+# subgenus removed ("Lithobius (Lithobius) forficatus"), rank markers removed
+# ("Peronea umbrana f. brunneana"), and diacritics removed ("kükenthali").
+PLAIN = (
+    "trim(regexp_replace(regexp_replace(strip_accents({col}), '\\s*\\([^)]*\\)', '', 'g'), "
+    "'\\s(var\\.|f\\.|fo\\.|forma|subsp\\.|ssp\\.|ab\\.|morph)\\s', ' ', 'g'))"
+)
 
 
 def _candidate_tables(con: duckdb.DuckDBPyConnection) -> None:
