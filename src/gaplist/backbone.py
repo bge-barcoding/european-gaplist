@@ -13,6 +13,7 @@ earlier runs, because everything after Phase 1 depends on it.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,8 +36,10 @@ COLUMNS = {
     "scientificName": "name",
     "authorship": "authorship",
     "extinct": "extinct",
+    "merged": "xr_added",  # clb:merged, true for names the eXtended Release adds
 }
 RESULT_TABLES = [t for t in db.TABLES if t != "run"]
+SUBGENUS = re.compile(r"\s*\([^)]*\)")
 
 
 @dataclass
@@ -68,6 +71,8 @@ def load_name_usage(con: duckdb.DuckDBPyConnection, tsv: Path) -> bool:
         select += ", NULL AS extinct"
     if "authorship" not in plain.values():
         select += ", NULL AS authorship"
+    if "merged" not in plain.values():
+        select += ", NULL AS xr_added"
     con.execute(
         f"""
         CREATE OR REPLACE TEMP TABLE col_usage AS
@@ -85,18 +90,20 @@ def _is_true(value: str | None) -> bool:
 
 def build_tree(con: duckdb.DuckDBPyConnection, kingdoms: list[str], exclude_extinct: bool) -> pd.DataFrame:
     """Walk the accepted taxa from the chosen kingdoms down, depth first."""
+    # The eXtended Release attaches BOLD BINs ("BOLD:AAD4010") to species as
+    # unranked children; they are not taxa we count, so they are left out.
     rows = con.execute(
         f"""
-        SELECT id, parent_id, lower(rank), name, authorship, extinct
-        FROM col_usage WHERE lower(status) IN {ACCEPTED}
+        SELECT id, parent_id, lower(rank), name, authorship, extinct, xr_added
+        FROM col_usage WHERE lower(status) IN {ACCEPTED} AND name NOT LIKE 'BOLD:%'
         """
     ).fetchall()
 
     info: dict[str, tuple] = {}
     children: dict[str, list[str]] = defaultdict(list)
     roots: list[str] = []
-    for taxon_id, parent_id, rank, name, authorship, extinct in rows:
-        info[taxon_id] = (parent_id, rank, name, authorship, _is_true(extinct))
+    for taxon_id, parent_id, rank, name, authorship, extinct, xr_added in rows:
+        info[taxon_id] = (parent_id, rank, name, authorship, _is_true(extinct), _is_true(xr_added))
         children[parent_id].append(taxon_id)
         if rank == "kingdom" and name in kingdoms:
             roots.append(taxon_id)
@@ -120,12 +127,13 @@ def build_tree(con: duckdb.DuckDBPyConnection, kingdoms: list[str], exclude_exti
                 counter += 1
                 out[open_rows.pop(taxon_id)][6] = counter
                 continue
-            parent_id, rank, name, authorship, extinct = info[taxon_id]
+            parent_id, rank, name, authorship, extinct, xr_added = info[taxon_id]
             if exclude_extinct and extinct:
                 continue  # skip the whole subtree
             ranks = dict(ranks)
             if rank in FIXED_RANKS:
-                ranks[rank] = name
+                # the web app shows species without subgenus
+                ranks[rank] = SUBGENUS.sub("", name) if rank == "species" else name
             if rank == "species":
                 species_id = taxon_id
             counter += 1
@@ -133,13 +141,14 @@ def build_tree(con: duckdb.DuckDBPyConnection, kingdoms: list[str], exclude_exti
             out.append(
                 [taxon_id, parent_id, rank, name, authorship, counter, None]
                 + [ranks.get(r) for r in FIXED_RANKS]
-                + [species_id]
+                + [species_id, xr_added]
             )
             stack.append((taxon_id, ranks, species_id, False))
             for child in sorted(children.get(taxon_id, []), key=lambda c: info[c][2], reverse=True):
                 stack.append((child, ranks, species_id, True))
 
-    columns = ["taxon_id", "parent_id", "rank", "name", "authorship", "lft", "rgt", *FIXED_RANKS, "species_id"]
+    columns = ["taxon_id", "parent_id", "rank", "name", "authorship", "lft", "rgt", *FIXED_RANKS, "species_id",
+               "xr_added"]
     return pd.DataFrame(out, columns=columns)
 
 
@@ -153,9 +162,9 @@ def store(con: duckdb.DuckDBPyConnection, tree: pd.DataFrame) -> None:
     con.execute(
         """
         INSERT INTO taxon (taxon_id, parent_id, rank, name, authorship, lft, rgt,
-                           kingdom, phylum, class, "order", family, genus, species, species_id)
+                           kingdom, phylum, class, "order", family, genus, species, species_id, xr_added)
         SELECT taxon_id, parent_id, rank, name, authorship, lft, rgt,
-               kingdom, phylum, class, "order", family, genus, species, species_id
+               kingdom, phylum, class, "order", family, genus, species, species_id, xr_added
         FROM tree_df
         """
     )
@@ -173,7 +182,7 @@ def store(con: duckdb.DuckDBPyConnection, tree: pd.DataFrame) -> None:
 def summarise(con: duckdb.DuckDBPyConnection) -> tuple[dict[str, int], pd.DataFrame]:
     counts = dict(
         zip(
-            ["species", "infraspecific", "synonyms", "no_family", "no_class"],
+            ["species", "infraspecific", "synonyms", "no_family", "no_class", "xr_added"],
             con.execute(
                 """
                 SELECT
@@ -181,7 +190,8 @@ def summarise(con: duckdb.DuckDBPyConnection) -> tuple[dict[str, int], pd.DataFr
                   (SELECT count(*) FROM taxon WHERE species_id IS NOT NULL AND rank <> 'species'),
                   (SELECT count(*) FROM synonym),
                   (SELECT count(*) FROM taxon WHERE rank = 'species' AND family IS NULL),
-                  (SELECT count(*) FROM taxon WHERE rank = 'species' AND class IS NULL)
+                  (SELECT count(*) FROM taxon WHERE rank = 'species' AND class IS NULL),
+                  (SELECT count(*) FROM taxon WHERE rank = 'species' AND xr_added)
                 """
             ).fetchone(),
         )
@@ -238,6 +248,11 @@ def build_backbone(settings: Settings | None = None, database: Path | None = Non
         + ".",
         f"{counts['species']:,} species in {', '.join(settings.col['kingdoms'])}"
         + (", extinct taxa left out." if settings.col["exclude_extinct"] else ", extinct taxa included."),
+        *(
+            [f"{counts['xr_added']:,} of these species come only from the eXtended Release (flagged as such)."]
+            if settings.col["release_type"] == "xr"
+            else []
+        ),
         f"{counts['infraspecific']:,} subspecies and other infraspecific taxa, counted with their species.",
         f"{counts['synonyms']:,} synonyms, available for name matching in the next step.",
     ]
